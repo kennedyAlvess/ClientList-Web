@@ -1,30 +1,43 @@
-"use client"
-import * as React from 'react';
+"use client";
+import React, { useEffect, useState } from 'react';
 import dynamic from 'next/dynamic';
 import { Box, Tooltip, IconButton } from '@mui/material';
 import DeleteIcon from '@mui/icons-material/Delete';
 import EditIcon from '@mui/icons-material/Edit';
+import clientesApi from '../../../../api/clientesApi';
 
 const MUIDataTable = dynamic(() => import("mui-datatables"), { ssr: false });
 
 export default function Clientes() {
+    const [rows, setRows] = useState([]); 
+    const [loading, setLoading] = useState(true);
 
-    function createData(name, celular, nascimento, status) {
-        return { name, celular, nascimento, status };
-    }
+    const mapStatusToLabel = (data) => {
+        return data.map((cliente) => ({
+            ...cliente,
+            status: cliente.status === true || cliente.status === 1 ? 'ATIVO' : 'INATIVO',
+        }));
+    };
 
-    const rows = [
-        createData('Valentino Hidromel', '(11)98111-1111', '11/22/2323', 'INATIVO'),
-        createData('Abner Coitadinho', '(11)98111-1111', '11/22/2323', 'ATIVO'),
-        createData('Vinicius porta choque', '(11)98111-1111', '11/22/2323', 'ATIVO'),
-        createData('Vlad dragão guerreiro x9', '(11)98111-1111', '11/22/2323', 'ATIVO'),
-        createData('Pebinha Lopes', '(11)98111-1111', '11/22/2323', 'INATIVO'),
-        createData('Pebinha Lopes2', '(11)98111-1111', '11/22/2323', 'INATIVO'),
-    ];
+    useEffect(() => {
+        const fetchData = async () => {
+            try {
+                const data = await clientesApi.getClientes(2);
+                const mappedData = mapStatusToLabel(data); // Mapeia os dados para ajustar o status
+                setRows(mappedData); // Define os dados mapeados no estado
+            } catch (error) {
+                console.error('Erro ao buscar clientes:', error);
+            } finally {
+                setLoading(false);
+            }
+        };
+
+        fetchData();
+    }, []);
 
     const columns = [
         {
-            name: 'name',
+            name: 'nome',
             label: 'Nome',
             options: {
                 filter: true,
@@ -32,7 +45,7 @@ export default function Clientes() {
             }
         },
         {
-            name: 'celular',
+            name: 'telefone',
             label: 'Celular',
             options: {
                 filter: true,
@@ -40,11 +53,15 @@ export default function Clientes() {
             }
         },
         {
-            name: 'nascimento',
+            name: 'dataNascimento',
             label: 'Data Nascimento',
             options: {
                 filter: true,
                 sort: true,
+                customBodyRender: (value) => {
+                    const date = new Date(value);
+                    return date.toLocaleDateString('pt-BR');
+                }
             }
         },
         {
@@ -90,20 +107,23 @@ export default function Clientes() {
             flexDirection="column"
             alignItems="right"
         >
-            <MUIDataTable
-                title={"Clientes"}
-                data={rows}
-                columns={columns}
-                options={{
-                    print: false,
-                    selectableRows: 'none',
-                    downloadOptions: {
-                        filename: 'clientes.csv',
-                        separator: ';',
-                    }
-                }}
-            />
+            {loading ? ( // Exibe um indicador de carregamento enquanto os dados estão sendo buscados
+                <p>Carregando...</p>
+            ) : (
+                <MUIDataTable
+                    title={"Clientes"}
+                    data={rows}
+                    columns={columns}
+                    options={{
+                        print: false,
+                        selectableRows: 'none',
+                        downloadOptions: {
+                            filename: 'clientes.csv',
+                            separator: ';',
+                        }
+                    }}
+                />
+            )}
         </Box>
-
-    )
+    );
 }

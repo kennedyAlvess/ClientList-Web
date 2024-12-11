@@ -1,6 +1,7 @@
 "use client"
 import '../../../assets/css/login.css';
 import { useRouter } from 'next/navigation';
+import usuarioApi from '../../../api/usuarioApi';
 
 import { useState } from 'react';
 
@@ -8,6 +9,7 @@ export default function Login() {
   const router = useRouter();
   const [matriculaError, setmatriculaError] = useState('');
   const [passwordError, setPasswordError] = useState('');
+  const [loginErros, setloginErros] = useState('');
 
   const handleSubmit = (event) => {
     event.preventDefault();
@@ -32,7 +34,13 @@ export default function Login() {
     }
 
     if (valid) {
-      router.push('/clientes');
+      usuarioApi.login(matricula, password)
+        .then(() => {
+          router.push('/clientes');
+        })
+        .catch(() => {
+          setloginErros('Matrícula ou senha inválida!');
+        });
     }
   };
 
@@ -69,6 +77,7 @@ export default function Login() {
               placeholder="Senha *"
             />
             {passwordError && <span className="loginError">{passwordError}</span>}
+            {loginErros && <span className="loginError">{loginErros}</span>}
           </div>
 
           <button type="submit" className="loginButton">
